@@ -131,6 +131,13 @@ class Connection:
                 self._connection.connect()
                 LOGGER.debug("connected on try %d out of %d", i, MAX_RETRY_COUNT)
                 exception_ = None
+                # The reset flag requests a reconnect; this connect satisfied
+                # it. Without clearing it here, a single disconnect() or
+                # transient error left the flag set forever, so every
+                # subsequent write() tore the connection down and opened a
+                # fresh one -- one TCP connection (and a lingering TIME_WAIT
+                # port) per request instead of a persistent connection.
+                self._reset.clear()
                 break
             except ConnectionRefusedError as error:
                 exception_ = error

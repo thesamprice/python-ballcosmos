@@ -210,3 +210,21 @@ class TestConnection(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestResetLifecycle(unittest.TestCase):
+    """A reset requests one reconnect; a successful connect must satisfy it.
+    Without the clear, a single disconnect() or transient error left the
+    flag set forever and every subsequent write() opened a fresh TCP
+    connection -- one lingering TIME_WAIT port per request."""
+
+    def test_connect_clears_reset(self):
+        from unittest.mock import MagicMock, patch
+        from ballcosmos.connection import Connection
+
+        with patch("ballcosmos.connection.HTTPConnection") as http_connection:
+            http_connection.return_value = MagicMock()
+            connection = Connection("127.0.0.1", 7777)
+            connection._reset.set()
+            connection.connect()
+            self.assertFalse(connection._reset.is_set())

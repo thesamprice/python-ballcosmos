@@ -128,7 +128,15 @@ class JsonRpcResponse(JsonRpc):
 
         msg = "Invalid JSON-RPC 2.0 Response"
         try:
-            hash_ = json.loads(response_data.decode("latin-1"))
+            # The body is UTF-8 JSON (binary values arrive as raw-byte
+            # hashes, never as raw bytes in the JSON text). latin-1 is kept
+            # only as a defensive fallback for malformed peers; decoding
+            # UTF-8 as latin-1 would mojibake any non-ASCII text.
+            try:
+                decoded = response_data.decode("utf-8")
+            except UnicodeDecodeError:
+                decoded = response_data.decode("latin-1")
+            hash_ = json.loads(decoded)
         except Exception as error:
             raise RuntimeError(f"{msg} : {error}")
 
@@ -151,8 +159,20 @@ class JsonRpcResponse(JsonRpc):
 
 
 def convert_bytearray_to_string_raw(object):
+    """Recursively encode bytes/bytearray values for transmission to COSMOS.
+
+    Binary data must be sent the same way the Ruby side sends it: as a
+    {"json_class": "String", "raw": [bytes...]} hash, which the server's
+    JSON parser (create_additions) turns back into a binary Ruby String.
+
+    The previous implementation decoded bytes with latin-1 into a str;
+    json.dumps then escaped every byte >= 0x80 as a unicode escape, and Ruby's JSON
+    parser materialized those code points as UTF-8 -- injecting 0xC2/0xC3
+    lead bytes and corrupting (usually doubling the size of) any binary
+    payload sent through cmd/cmd_raw/send_raw/inject_tlm.
+    """
     if isinstance(object, (bytes, bytearray)):
-        return object.decode("latin-1")
+        return {"json_class": "String", "raw": list(object)}
     elif isinstance(object, dict):
         for key, value in object.items():
             object[key] = convert_bytearray_to_string_raw(value)
