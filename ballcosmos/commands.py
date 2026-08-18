@@ -69,6 +69,11 @@ def _cmd(cmd_, cmd_no_hazardous, *args):
         _log_cmd(cmd_, target_name, cmd_name, cmd_params)
     except CosmosResponseError as error:
         resp_error = error.response.error().data()["instance_variables"]
+        # Only a HazardousError carries these; any other server error
+        # (bad parameter, size mismatch, ...) must surface as itself
+        # rather than dying here with a KeyError.
+        if "@target_name" not in resp_error:
+            raise
         ok_to_proceed = prompt_for_hazardous(
             resp_error["@target_name"],
             resp_error["@cmd_name"],
@@ -186,6 +191,17 @@ def get_cmd_param_list(target_name, cmd_name):
     containing the parameter name, default value, states, description, units
     full name, units abbreviation, and whether it is required."""
     return ballcosmos.CTS.write("get_cmd_param_list", target_name, cmd_name)
+
+
+def get_cmd_details(target_name, cmd_name):
+    """Returns the full metadata hash for every parameter of the command,
+    including bit_offset, bit_size, data_type, endianness, array_size,
+    default, states, ranges, required, format_string, units and
+    description. The command-side equivalent of get_tlm_details.
+
+    Requires a COSMOS server providing the get_cmd_details API method
+    (get_cmd_param_list predates it but does not include offsets)."""
+    return ballcosmos.CTS.write("get_cmd_details", target_name, cmd_name)
 
 
 def get_cmd_hazardous(target_name, cmd_name, cmd_params=None):
