@@ -178,6 +178,26 @@ def get_tlm_details(items):
     return ballcosmos.CTS.write("get_tlm_details", items)
 
 
+def get_all_telemetry(target_name):
+    """Returns complete telemetry packet definitions for a target, including all
+    items with full metadata. This is the COSMOS 4 equivalent of
+    OpenC3/COSMOS 5's get_all_telemetry method.
+
+    Args:
+        target_name: Name of the target
+
+    Returns:
+        Array of telemetry packet dicts, each containing:
+            - target_name: Target name
+            - packet_name: Packet name
+            - endianness: Default endianness (BIG_ENDIAN or LITTLE_ENDIAN)
+            - description: Packet description
+            - items: Array of item dicts (with bit_offset, bit_size, etc.)
+
+    Requires COSMOS 4 server with get_all_telemetry API method."""
+    return ballcosmos.CTS.write("get_all_telemetry", target_name)
+
+
 def get_tlm_buffer(target_name, packet_name):
     """Returns the buffer from the telemetry packet."""
     return ballcosmos.CTS.write("get_tlm_buffer", target_name, packet_name)

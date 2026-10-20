@@ -204,6 +204,26 @@ def get_cmd_details(target_name, cmd_name):
     return ballcosmos.CTS.write("get_cmd_details", target_name, cmd_name)
 
 
+def get_all_commands(target_name):
+    """Returns complete command packet definitions for a target, including all
+    parameters with full metadata. This is the COSMOS 4 equivalent of
+    OpenC3/COSMOS 5's get_all_commands method.
+
+    Args:
+        target_name: Name of the target
+
+    Returns:
+        Array of command packet dicts, each containing:
+            - target_name: Target name
+            - packet_name: Command name
+            - endianness: Default endianness (BIG_ENDIAN or LITTLE_ENDIAN)
+            - description: Command description
+            - items: Array of parameter dicts (with bit_offset, bit_size, etc.)
+
+    Requires COSMOS 4 server with get_all_commands API method."""
+    return ballcosmos.CTS.write("get_all_commands", target_name)
+
+
 def get_cmd_hazardous(target_name, cmd_name, cmd_params=None):
     """Returns whether a command is hazardous (true or false)"""
     if cmd_params is None:
